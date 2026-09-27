@@ -1,0 +1,113 @@
+{% extends "expenses/base.html" %}
+{% block title %}لوحة التحكم{% endblock %}
+{% block content %}
+<h2 class="mb-4">لوحة التحكم</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4 col-sm-6">
+        <div class="stat-card total">
+            <div class="small">إجمالي المصروفات</div>
+            <div class="value">{{ total_all_time }} ج.م</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="stat-card month">
+            <div class="small">مصروفات هذا الشهر</div>
+            <div class="value">{{ total_this_month }} ج.م</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="stat-card count">
+            <div class="small">عدد العمليات</div>
+            <div class="value">{{ expense_count }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h5 class="mb-3"><i class="fa-solid fa-chart-pie"></i> إحصائيات حسب التصنيف</h5>
+            {% if category_stats %}
+                <table class="table table-sm align-middle">
+                    <thead><tr><th>التصنيف</th><th>عدد</th><th>الإجمالي</th></tr></thead>
+                    <tbody>
+                    {% for stat in category_stats %}
+                        <tr>
+                            <td>
+                                <span class="category-badge" style="background-color: {{ stat.category__color|default:'#6b7280' }};">
+                                    {{ stat.category__name|default:"بدون تصنيف" }}
+                                </span>
+                            </td>
+                            <td>{{ stat.count }}</td>
+                            <td>{{ stat.total }} ج.م</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted mb-0">لا توجد بيانات بعد.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h5 class="mb-3"><i class="fa-solid fa-calendar"></i> آخر 6 أشهر</h5>
+            {% if monthly_breakdown %}
+                <table class="table table-sm align-middle">
+                    <thead><tr><th>الشهر</th><th>الإجمالي</th></tr></thead>
+                    <tbody>
+                    {% for m in monthly_breakdown %}
+                        <tr>
+                            <td>{{ m.month|date:"F Y" }}</td>
+                            <td>{{ m.total }} ج.م</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted mb-0">لا توجد بيانات بعد.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card p-3 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="fa-solid fa-clock-rotate-left"></i> آخر المصروفات</h5>
+        <a href="{% url 'expenses:expense_list' %}" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+    </div>
+    {% if recent_expenses %}
+        <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>التاريخ</th><th>الوصف</th><th>التصنيف</th><th>المبلغ</th><th></th></tr></thead>
+            <tbody>
+            {% for expense in recent_expenses %}
+                <tr>
+                    <td>{{ expense.date }}</td>
+                    <td>{{ expense.description|default:"—" }}</td>
+                    <td>
+                        {% if expense.category %}
+                            <span class="category-badge" style="background-color: {{ expense.category.color }};">
+                                {{ expense.category.name }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">بدون</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ expense.amount }} ج.م</td>
+                    <td class="text-nowrap">
+                        <a href="{% url 'expenses:expense_edit' expense.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen"></i></a>
+                        <a href="{% url 'expenses:expense_delete' expense.pk %}" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">لم تقم بإضافة أي مصروفات بعد. <a href="{% url 'expenses:expense_add' %}">أضف أول مصروف</a></p>
+    {% endif %}
+</div>
+{% endblock %}

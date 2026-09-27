@@ -1,0 +1,44 @@
+{% extends "expenses/base.html" %}
+{% block title %}التصنيفات{% endblock %}
+{% block content %}
+<h2 class="mb-4">التصنيفات</h2>
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card p-3">
+            <h5 class="mb-3">إضافة تصنيف جديد</h5>
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary w-100">إضافة</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card p-3">
+            <h5 class="mb-3">التصنيفات الحالية</h5>
+            {% if categories %}
+                <ul class="list-group">
+                {% for category in categories %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="category-badge" style="background-color: {{ category.color }};">{{ category.name }}</span>
+                        <a href="{% url 'expenses:category_delete' category.pk %}" class="btn btn-sm btn-outline-danger">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">لا توجد تصنيفات بعد.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

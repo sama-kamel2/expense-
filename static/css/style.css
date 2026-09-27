@@ -1,0 +1,56 @@
+:root {
+    --brand: #4f46e5;
+    --brand-dark: #3730a3;
+    --bg-soft: #f6f7fb;
+}
+
+body {
+    background-color: var(--bg-soft);
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+.app-navbar {
+    background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+}
+
+.card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.stat-card {
+    border-radius: 14px;
+    color: #fff;
+    padding: 1.25rem 1.5rem;
+}
+
+.stat-card.total { background: linear-gradient(135deg, #4f46e5, #6366f1); }
+.stat-card.month { background: linear-gradient(135deg, #059669, #10b981); }
+.stat-card.count { background: linear-gradient(135deg, #d97706, #f59e0b); }
+
+.stat-card .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    color: #fff;
+    font-size: 0.8rem;
+}
+
+.table thead {
+    background-color: #eef0fb;
+}
+
+.auth-card {
+    max-width: 420px;
+    margin: 3rem auto;
+}
+
+@media (max-width: 576px) {
+    .stat-card .value { font-size: 1.4rem; }
+}

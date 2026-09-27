@@ -1,0 +1,70 @@
+{% extends "expenses/base.html" %}
+{% block title %}المصروفات{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-0">المصروفات</h2>
+    <a href="{% url 'expenses:expense_add' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> إضافة مصروف</a>
+</div>
+
+<div class="card p-3 mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small">التصنيف</label>
+            {{ form.category }}
+        </div>
+        <div class="col-md-2 col-sm-6">
+            <label class="form-label small">من تاريخ</label>
+            {{ form.date_from }}
+        </div>
+        <div class="col-md-2 col-sm-6">
+            <label class="form-label small">إلى تاريخ</label>
+            {{ form.date_to }}
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small">بحث بالوصف</label>
+            {{ form.q }}
+        </div>
+        <div class="col-md-2 col-sm-6 d-grid">
+            <button type="submit" class="btn btn-outline-primary"><i class="fa-solid fa-filter"></i> فلترة</button>
+        </div>
+    </form>
+</div>
+
+<div class="card p-3">
+    <div class="d-flex justify-content-between mb-2">
+        <span class="text-muted">عدد النتائج: {{ expenses|length }}</span>
+        <span class="fw-bold">الإجمالي: {{ total }} ج.م</span>
+    </div>
+    {% if expenses %}
+    <div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>التاريخ</th><th>الوصف</th><th>التصنيف</th><th>المبلغ</th><th></th></tr></thead>
+        <tbody>
+        {% for expense in expenses %}
+            <tr>
+                <td>{{ expense.date }}</td>
+                <td>{{ expense.description|default:"—" }}</td>
+                <td>
+                    {% if expense.category %}
+                        <span class="category-badge" style="background-color: {{ expense.category.color }};">
+                            {{ expense.category.name }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">بدون</span>
+                    {% endif %}
+                </td>
+                <td>{{ expense.amount }} ج.م</td>
+                <td class="text-nowrap">
+                    <a href="{% url 'expenses:expense_edit' expense.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen"></i></a>
+                    <a href="{% url 'expenses:expense_delete' expense.pk %}" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+        <p class="text-muted mb-0">لا توجد مصروفات مطابقة.</p>
+    {% endif %}
+</div>
+{% endblock %}

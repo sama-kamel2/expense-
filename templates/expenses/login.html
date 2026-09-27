@@ -1,0 +1,25 @@
+{% extends "expenses/base.html" %}
+{% block title %}تسجيل الدخول{% endblock %}
+{% block content %}
+<div class="card auth-card p-4">
+    <h3 class="mb-3 text-center"><i class="fa-solid fa-wallet"></i> تسجيل الدخول</h3>
+    <form method="post">
+        {% csrf_token %}
+        {% if form.errors %}
+            <div class="alert alert-danger">اسم المستخدم أو كلمة المرور غير صحيحة.</div>
+        {% endif %}
+        <div class="mb-3">
+            <label class="form-label">اسم المستخدم</label>
+            <input type="text" name="username" class="form-control" required autofocus>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">كلمة المرور</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">دخول</button>
+    </form>
+    <p class="text-center mt-3 mb-0">
+        مستخدم جديد؟ <a href="{% url 'expenses:register' %}">إنشاء حساب</a>
+    </p>
+</div>
+{% endblock %}
