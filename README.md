@@ -1,84 +1,75 @@
-# نظام إدارة المصروفات (Expense Management System)
+# Expense Management System
 
-مشروع Django كامل وجاهز للنشر (production-ready) لإدارة المصروفات الشخصية.
+A complete, production-ready Django project for managing personal expenses.
+**Note:** The user-facing interface (all pages, labels, and messages) is in **Arabic**, with right-to-left (RTL) layout. This README and the code itself are in English.
 
-## المميزات
-- تسجيل مستخدم / تسجيل دخول / تسجيل خروج
-- لوحة تحكم (Dashboard) بإحصائيات فورية
-- إضافة / تعديل / حذف المصروفات
-- تصنيفات مصروفات خاصة بكل مستخدم
-- تاريخ + مبلغ + وصف لكل مصروف
-- إجمالي المصروفات وإجمالي مصروفات الشهر الحالي
-- إحصائيات حسب التصنيف وآخر 6 أشهر
-- بحث وفلترة (بالتصنيف، التاريخ، الوصف)
-- لوحة إدارة Django (Django Admin)
-- واجهة متجاوبة (Responsive) بدعم اللغة العربية RTL
-- إعدادات جاهزة للنشر على سيرفر/دومين حقيقي
+## Features
+- User registration / login / logout
+- Dashboard with real-time statistics
+- Add / edit / delete expenses
+- Per-user expense categories
+- Date + amount + description for each expense
+- Total expenses and current-month total
+- Category breakdown and last 6 months breakdown
+- Search / filter (by category, date range, description)
+- Django Admin panel
+- Responsive UI (Arabic, RTL)
+- Production-ready settings for real server/domain deployment
 
-## التشغيل محليًا
+## Run locally
 
 ```bash
 python3 -m venv venv
-source venv/bin/activate          # على ويندوز: venv\Scripts\activate
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env              # ثم عدّل القيم داخل .env
-export DEBUG=True                 # للتطوير المحلي فقط
+cp .env.example .env              # then edit the values inside .env
+```
 
+Open `.env` and set:
+```
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+```
+
+Then run:
+```bash
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
 
-افتح المتصفح على: http://127.0.0.1:8000/
+Open your browser at: http://127.0.0.1:8000/
 
-## متغيرات البيئة (.env)
-انسخ `.env.example` إلى `.env` واملأ القيم:
+## Environment variables (.env)
 
-| المتغير | الوصف |
+Copy `.env.example` to `.env` and fill in the values:
+
+| Variable | Description |
 |---|---|
-| `SECRET_KEY` | مفتاح سري عشوائي وطويل (لازم تغيّره قبل النشر) |
-| `DEBUG` | `False` في الإنتاج |
-| `ALLOWED_HOSTS` | الدومين بتاعك مفصول بفاصلة |
-| `CSRF_TRUSTED_ORIGINS` | روابط https الخاصة بالدومين |
-| `DATABASE_URL` | رابط قاعدة بيانات Postgres (اختياري، لو فاضي هيستخدم SQLite) |
+| `SECRET_KEY` | A long, random secret key (change before deploying) |
+| `DEBUG` | `False` in production |
+| `ALLOWED_HOSTS` | Your domain(s), comma-separated |
+| `CSRF_TRUSTED_ORIGINS` | Your https domain URL(s) |
+| `DATABASE_URL` | Postgres connection URL (optional — uses SQLite if empty) |
 
-## النشر (Deployment)
+## Deployment (Railway / any PaaS)
 
-المشروع جاهز لأي منصة تدعم Python/WSGI (مثل: Railway, Render, Heroku-style, DigitalOcean App Platform, أو VPS عادي مع Nginx + Gunicorn).
+The project includes a `Procfile` and `runtime.txt`, so it works out of the box on platforms like **Railway**, **Render**, or similar Python/WSGI hosts:
 
-### خطوات عامة على VPS (Ubuntu + Nginx + Gunicorn):
+1. Push the project to a GitHub repository.
+2. Create a new project on the platform and connect it to that repo.
+3. Add the environment variables listed above (at minimum `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS`).
+4. The platform runs `release: migrate` and `web: gunicorn` automatically from the `Procfile`.
+5. Once deployed, connect your custom domain from the platform's domain settings.
 
-1. ارفع المشروع للسيرفر وجهّز بيئة بايثون:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-2. جهّز ملف `.env` بالقيم الحقيقية (`DEBUG=False`, `ALLOWED_HOSTS`, `SECRET_KEY`, `DATABASE_URL`...).
-3. اجمع الملفات الثابتة:
-   ```bash
-   python manage.py collectstatic --noinput
-   python manage.py migrate
-   python manage.py createsuperuser
-   ```
-4. شغّل المشروع بـ Gunicorn:
-   ```bash
-   gunicorn config.wsgi:application --bind 0.0.0.0:8000
-   ```
-5. حط Nginx كـ reverse proxy قدام Gunicorn، وفعّل شهادة SSL (مثلاً عن طريق Certbot) عشان `SECURE_SSL_REDIRECT` يشتغل صح.
-6. (اختياري) استخدم Postgres بدل SQLite لو عندك أكتر من instance بيشتغل على نفس القاعدة، عن طريق `DATABASE_URL`.
-
-### النشر على منصة PaaS (Railway/Render/Heroku)
-المشروع فيه `Procfile` و`runtime.txt` جاهزين، يكفي تربط الـ repo وتضيف environment variables (زي `.env.example`) ومعظم المنصات هتشغّل `release: migrate` و`web: gunicorn` تلقائيًا.
-
-## هيكل المشروع
+## Project structure
 ```
 expense_manager/
-├── config/            # إعدادات المشروع (settings, urls, wsgi)
-├── expenses/          # التطبيق الرئيسي (models, views, forms, urls, admin)
-├── templates/expenses/# قوالب HTML
-├── static/css/        # ملفات CSS
+├── config/              # Project settings (settings, urls, wsgi)
+├── expenses/             # Main app (models, views, forms, urls, admin)
+├── templates/expenses/   # HTML templates (Arabic, RTL)
+├── static/css/           # CSS files
 ├── requirements.txt
 ├── Procfile
 ├── runtime.txt
@@ -86,8 +77,8 @@ expense_manager/
 └── manage.py
 ```
 
-## ملاحظات أمنية قبل النشر
-- غيّر `SECRET_KEY` لقيمة عشوائية طويلة.
-- خلّي `DEBUG=False` في الإنتاج.
-- حدّد `ALLOWED_HOSTS` و`CSRF_TRUSTED_ORIGINS` بالدومين الحقيقي فقط.
-- استخدم HTTPS (SSL) دايمًا في الإنتاج.
+## Security checklist before going live
+- Change `SECRET_KEY` to a new random value.
+- Set `DEBUG=False` in production.
+- Set `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` to your real domain only.
+- Always use HTTPS in production.
