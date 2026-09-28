@@ -1,24 +1,25 @@
 {% extends "expenses/base.html" %}
-{% block title %}لوحة التحكم{% endblock %}
+{% load i18n_tags %}
+{% block title %}{% t "nav_dashboard" %}{% endblock %}
 {% block content %}
-<h2 class="mb-4">لوحة التحكم</h2>
+<h2 class="mb-4">{% t "nav_dashboard" %}</h2>
 
 <div class="row g-3 mb-4">
     <div class="col-md-4 col-sm-6">
         <div class="stat-card total">
-            <div class="small">إجمالي المصروفات</div>
-            <div class="value">{{ total_all_time }} ج.م</div>
+            <div class="small">{% t "total_all_time" %}</div>
+            <div class="value">{{ total_all_time|money }} {% t "cur" %}</div>
         </div>
     </div>
     <div class="col-md-4 col-sm-6">
         <div class="stat-card month">
-            <div class="small">مصروفات هذا الشهر</div>
-            <div class="value">{{ total_this_month }} ج.م</div>
+            <div class="small">{% t "total_month" %}</div>
+            <div class="value">{{ total_this_month|money }} {% t "cur" %}</div>
         </div>
     </div>
     <div class="col-md-4 col-sm-6">
         <div class="stat-card count">
-            <div class="small">عدد العمليات</div>
+            <div class="small">{% t "op_count" %}</div>
             <div class="value">{{ expense_count }}</div>
         </div>
     </div>
@@ -27,14 +28,14 @@
 {% if overall_budget or category_budgets %}
 <div class="card p-3 mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0"><i class="fa-solid fa-piggy-bank"></i> الميزانية</h5>
-        <a href="{% url 'expenses:budgets' %}" class="btn btn-sm btn-outline-primary">إدارة الميزانيات</a>
+        <h5 class="mb-0"><i class="fa-solid fa-piggy-bank"></i> {% t "budget" %}</h5>
+        <a href="{% url 'expenses:budgets' %}" class="btn btn-sm btn-outline-primary">{% t "manage_budgets" %}</a>
     </div>
     {% if overall_budget %}
         <div class="d-flex justify-content-between mb-1">
-            <span>الميزانية الكلية ({{ overall_budget.amount }} ج.م)</span>
+            <span>{% t "overall_budget_label" %} ({{ overall_budget.amount|money }} {% t "cur" %})</span>
             <span class="budget-remaining {% if overall_budget.over %}danger{% elif overall_budget.percent >= 80 %}warning{% else %}ok{% endif %}">
-                {% if overall_budget.over %}تجاوزت بـ {{ overall_budget.over_amount }} ج.م{% else %}متبقي {{ overall_budget.remaining }} ج.م{% endif %}
+                {% if overall_budget.over %}{% t "over_by" amount=overall_budget.over_amount|money %}{% else %}{% t "remaining" amount=overall_budget.remaining|money %}{% endif %} {% t "cur" %}
             </span>
         </div>
         <div class="budget-progress mb-3">
@@ -46,7 +47,7 @@
             <div class="d-flex justify-content-between small mb-1">
                 <span class="category-badge" style="background-color: {{ row.category.color }};">{{ row.category.name }}</span>
                 <span class="budget-remaining {% if row.over %}danger{% elif row.percent >= 80 %}warning{% else %}ok{% endif %}">
-                    {% if row.over %}تجاوزت بـ {{ row.over_amount }} ج.م{% else %}متبقي {{ row.remaining }} ج.م{% endif %}
+                    {% if row.over %}{% t "over_by" amount=row.over_amount|money %}{% else %}{% t "remaining" amount=row.remaining|money %}{% endif %} {% t "cur" %}
                 </span>
             </div>
             <div class="budget-progress">
@@ -60,47 +61,47 @@
 <div class="row g-3">
     <div class="col-lg-6">
         <div class="card p-3 h-100">
-            <h5 class="mb-3"><i class="fa-solid fa-chart-pie"></i> إحصائيات حسب التصنيف</h5>
+            <h5 class="mb-3"><i class="fa-solid fa-chart-pie"></i> {% t "category_stats" %}</h5>
             {% if category_stats %}
                 <table class="table table-sm align-middle">
-                    <thead><tr><th>التصنيف</th><th>عدد</th><th>الإجمالي</th></tr></thead>
+                    <thead><tr><th>{% t "th_category" %}</th><th>{% t "th_count" %}</th><th>{% t "th_total" %}</th></tr></thead>
                     <tbody>
                     {% for stat in category_stats %}
                         <tr>
                             <td>
                                 <span class="category-badge" style="background-color: {{ stat.category__color|default:'#6b7280' }};">
-                                    {{ stat.category__name|default:"بدون تصنيف" }}
+                                    {% if stat.category__name %}{{ stat.category__name }}{% else %}{% t "uncategorized" %}{% endif %}
                                 </span>
                             </td>
                             <td>{{ stat.count }}</td>
-                            <td>{{ stat.total }} ج.م</td>
+                            <td>{{ stat.total|money }} {% t "cur" %}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             {% else %}
-                <p class="text-muted mb-0">لا توجد بيانات بعد.</p>
+                <p class="text-muted mb-0">{% t "no_data" %}</p>
             {% endif %}
         </div>
     </div>
 
     <div class="col-lg-6">
         <div class="card p-3 h-100">
-            <h5 class="mb-3"><i class="fa-solid fa-calendar"></i> آخر 6 أشهر</h5>
+            <h5 class="mb-3"><i class="fa-solid fa-calendar"></i> {% t "last_6_months" %}</h5>
             {% if monthly_breakdown %}
                 <table class="table table-sm align-middle">
-                    <thead><tr><th>الشهر</th><th>الإجمالي</th></tr></thead>
+                    <thead><tr><th>{% t "th_month" %}</th><th>{% t "th_total" %}</th></tr></thead>
                     <tbody>
                     {% for m in monthly_breakdown %}
                         <tr>
                             <td>{{ m.month|date:"F Y" }}</td>
-                            <td>{{ m.total }} ج.م</td>
+                            <td>{{ m.total|money }} {% t "cur" %}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             {% else %}
-                <p class="text-muted mb-0">لا توجد بيانات بعد.</p>
+                <p class="text-muted mb-0">{% t "no_data" %}</p>
             {% endif %}
         </div>
     </div>
@@ -108,17 +109,17 @@
 
 <div class="card p-3 mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0"><i class="fa-solid fa-clock-rotate-left"></i> آخر المصروفات</h5>
-        <a href="{% url 'expenses:expense_list' %}" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+        <h5 class="mb-0"><i class="fa-solid fa-clock-rotate-left"></i> {% t "recent_expenses" %}</h5>
+        <a href="{% url 'expenses:expense_list' %}" class="btn btn-sm btn-outline-primary">{% t "view_all" %}</a>
     </div>
     {% if recent_expenses %}
         <div class="table-responsive">
         <table class="table table-hover align-middle">
-            <thead><tr><th>التاريخ</th><th>الوصف</th><th>التصنيف</th><th>المبلغ</th><th></th></tr></thead>
+            <thead><tr><th>{% t "th_date" %}</th><th>{% t "th_description" %}</th><th>{% t "th_category" %}</th><th>{% t "th_amount" %}</th><th></th></tr></thead>
             <tbody>
             {% for expense in recent_expenses %}
                 <tr>
-                    <td>{{ expense.date }}</td>
+                    <td>{{ expense.date|date:"Y-m-d" }}</td>
                     <td>{{ expense.description|default:"—" }}</td>
                     <td>
                         {% if expense.category %}
@@ -126,10 +127,10 @@
                                 {{ expense.category.name }}
                             </span>
                         {% else %}
-                            <span class="text-muted">بدون</span>
+                            <span class="text-muted">{% t "none_short" %}</span>
                         {% endif %}
                     </td>
-                    <td>{{ expense.amount }} ج.م</td>
+                    <td>{{ expense.amount|money }} {% t "cur" %}</td>
                     <td class="text-nowrap">
                         <a href="{% url 'expenses:expense_edit' expense.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen"></i></a>
                         <a href="{% url 'expenses:expense_delete' expense.pk %}" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></a>
@@ -140,7 +141,7 @@
         </table>
         </div>
     {% else %}
-        <p class="text-muted mb-0">لم تقم بإضافة أي مصروفات بعد. <a href="{% url 'expenses:expense_add' %}">أضف أول مصروف</a></p>
+        <p class="text-muted mb-0">{% t "no_expenses_yet" %} <a href="{% url 'expenses:expense_add' %}">{% t "add_first" %}</a></p>
     {% endif %}
 </div>
 {% endblock %}

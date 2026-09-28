@@ -21,6 +21,10 @@ urlpatterns = [
         views.ExpenseDeleteView.as_view(),
         name="expense_delete",
     ),
+    # Account & preferences
+    path("account/", views.account, name="account"),
+    path("account/delete/", views.account_delete, name="account_delete"),
+    path("preferences/", views.set_preferences, name="set_preferences"),
     # Budgets
     path("budgets/", views.budgets, name="budgets"),
     # Categories

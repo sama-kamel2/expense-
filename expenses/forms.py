@@ -2,7 +2,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Budget, Category, Expense
+from .models import Category, Expense
+from .translations import DEFAULT_LANGUAGE, translate
 
 
 class RegisterForm(UserCreationForm):
@@ -27,17 +28,19 @@ class ExpenseForm(forms.ModelForm):
                 attrs={"class": "form-control", "step": "0.01", "min": "0"}
             ),
             "category": forms.Select(attrs={"class": "form-select"}),
+            # ISO format is required by <input type="date"> in every language.
             "date": forms.DateInput(
-                attrs={"class": "form-control", "type": "date"}
+                format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}
             ),
             "description": forms.TextInput(attrs={"class": "form-control"}),
         }
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, lang=DEFAULT_LANGUAGE, **kwargs):
         super().__init__(*args, **kwargs)
         if user is not None:
             self.fields["category"].queryset = Category.objects.filter(user=user)
         self.fields["category"].required = False
+        self.fields["category"].empty_label = translate("uncategorized", lang)
 
 
 class CategoryForm(forms.ModelForm):
@@ -51,10 +54,23 @@ class CategoryForm(forms.ModelForm):
             ),
         }
 
+    def __init__(self, *args, user=None, lang=DEFAULT_LANGUAGE, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._user = user
+        self._lang = lang
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        if (
+            self._user is not None
+            and Category.objects.filter(user=self._user, name__iexact=name).exists()
+        ):
+            raise forms.ValidationError(translate("category_exists", self._lang))
+        return name
+
 
 class BudgetAmountForm(forms.Form):
-    """A tiny reusable form: just one amount field, used for the overall
-    budget and for each per-category budget on the budgets page."""
+    """One amount field, used for the overall budget and every category budget."""
 
     amount = forms.DecimalField(
         max_digits=12,
@@ -74,20 +90,24 @@ class ExpenseFilterForm(forms.Form):
     )
     date_from = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+        widget=forms.DateInput(
+            format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}
+        ),
     )
     date_to = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+        widget=forms.DateInput(
+            format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}
+        ),
     )
     q = forms.CharField(
         required=False,
-        widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": "بحث في الوصف..."}
-        ),
+        widget=forms.TextInput(attrs={"class": "form-control"}),
     )
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, lang=DEFAULT_LANGUAGE, **kwargs):
         super().__init__(*args, **kwargs)
         if user is not None:
             self.fields["category"].queryset = Category.objects.filter(user=user)
+        self.fields["category"].empty_label = translate("all_categories", lang)
+        self.fields["q"].widget.attrs["placeholder"] = translate("search_placeholder", lang)

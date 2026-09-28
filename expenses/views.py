@@ -1,18 +1,63 @@
-from datetime import date
-
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView, LogoutView
-from django.db.models import Sum, Count
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, DetailView, UpdateView
+from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
+from django.views.generic import CreateView, DeleteView, DetailView
 
-from .forms import BudgetAmountForm, CategoryForm, ExpenseFilterForm, ExpenseForm, RegisterForm
+from .forms import (
+    BudgetAmountForm,
+    CategoryForm,
+    ExpenseFilterForm,
+    ExpenseForm,
+    RegisterForm,
+)
+from .middleware import COOKIE_MAX_AGE, get_profile
 from .models import Budget, Category, Expense
+from .translations import (
+    DEFAULT_LANGUAGE,
+    SUPPORTED_LANGUAGES,
+    THEMES,
+    translate,
+)
 
+
+def tr(request, key, **kwargs):
+    """Translate `key` into the language of the current request."""
+    return translate(key, getattr(request, "LANG", DEFAULT_LANGUAGE), **kwargs)
+
+
+# ---------- Auth ----------
+
+class SignUpView(CreateView):
+    form_class = RegisterForm
+    template_name = "expenses/register.html"
+    success_url = reverse_lazy("expenses:login")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, tr(self.request, "register_success"))
+        return response
+
+
+class UserLoginView(LoginView):
+    template_name = "expenses/login.html"
+    redirect_authenticated_user = True
+
+
+class UserLogoutView(LogoutView):
+    next_page = reverse_lazy("expenses:login")
+
+
+# ---------- Budget helper ----------
 
 def _budget_summary(user):
     """
@@ -22,7 +67,7 @@ def _budget_summary(user):
       * The overall remaining is reduced only by (a) spending in categories
         that have no budget, and (b) the overflow beyond a category's budget.
     """
-    today = date.today()
+    today = timezone.localdate()
     month_expenses = Expense.objects.filter(
         user=user, date__year=today.year, date__month=today.month
     )
@@ -60,7 +105,7 @@ def _budget_summary(user):
             }
         )
 
-    # Spending that is not covered by any category budget
+    # Spending not covered by any category budget
     # (categories without a budget, or expenses with no category).
     unbudgeted_spent = (
         month_expenses.exclude(category_id__in=budgeted_category_ids).aggregate(
@@ -74,7 +119,11 @@ def _budget_summary(user):
     if overall_budget:
         used = reserved + overflow + unbudgeted_spent
         remaining = overall_budget.amount - used
-        percent = min(100, int((used / overall_budget.amount) * 100)) if overall_budget.amount else 0
+        percent = (
+            min(100, int((used / overall_budget.amount) * 100))
+            if overall_budget.amount
+            else 0
+        )
         overall = {
             "amount": overall_budget.amount,
             "reserved": reserved,
@@ -90,28 +139,6 @@ def _budget_summary(user):
     return overall, category_rows
 
 
-# ---------- Auth ----------
-
-class SignUpView(CreateView):
-    form_class = RegisterForm
-    template_name = "expenses/register.html"
-    success_url = reverse_lazy("expenses:login")
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, "تم إنشاء الحساب بنجاح، سجّل دخولك الآن.")
-        return response
-
-
-class UserLoginView(LoginView):
-    template_name = "expenses/login.html"
-    redirect_authenticated_user = True
-
-
-class UserLogoutView(LogoutView):
-    next_page = reverse_lazy("expenses:login")
-
-
 # ---------- Dashboard ----------
 
 @login_required
@@ -119,7 +146,7 @@ def dashboard(request):
     user = request.user
     expenses = Expense.objects.filter(user=user)
 
-    today = date.today()
+    today = timezone.localdate()
     total_all_time = expenses.aggregate(total=Sum("amount"))["total"] or 0
     monthly_qs = expenses.filter(date__year=today.year, date__month=today.month)
     total_this_month = monthly_qs.aggregate(total=Sum("amount"))["total"] or 0
@@ -161,7 +188,7 @@ def dashboard(request):
 def expense_list(request):
     user = request.user
     expenses = Expense.objects.filter(user=user).select_related("category")
-    form = ExpenseFilterForm(request.GET or None, user=user)
+    form = ExpenseFilterForm(request.GET or None, user=user, lang=request.LANG)
 
     if form.is_valid():
         category = form.cleaned_data.get("category")
@@ -187,7 +214,7 @@ def expense_list(request):
     )
 
 
-class ExpenseDetailView(DetailView):
+class ExpenseDetailView(LoginRequiredMixin, DetailView):
     model = Expense
     template_name = "expenses/expense_detail.html"
     context_object_name = "expense"
@@ -199,17 +226,21 @@ class ExpenseDetailView(DetailView):
 @login_required
 def expense_create(request):
     if request.method == "POST":
-        form = ExpenseForm(request.POST, user=request.user)
+        form = ExpenseForm(request.POST, user=request.user, lang=request.LANG)
         if form.is_valid():
             expense = form.save(commit=False)
             expense.user = request.user
             expense.save()
-            messages.success(request, "تمت إضافة المصروف بنجاح.")
+            messages.success(request, tr(request, "expense_added"))
             return redirect("expenses:dashboard")
     else:
-        form = ExpenseForm(user=request.user, initial={"date": date.today()})
+        form = ExpenseForm(
+            user=request.user, lang=request.LANG, initial={"date": timezone.localdate()}
+        )
     return render(
-        request, "expenses/expense_form.html", {"form": form, "title": "إضافة مصروف"}
+        request,
+        "expenses/expense_form.html",
+        {"form": form, "title_key": "add_expense_title"},
     )
 
 
@@ -217,19 +248,23 @@ def expense_create(request):
 def expense_update(request, pk):
     expense = get_object_or_404(Expense, pk=pk, user=request.user)
     if request.method == "POST":
-        form = ExpenseForm(request.POST, instance=expense, user=request.user)
+        form = ExpenseForm(
+            request.POST, instance=expense, user=request.user, lang=request.LANG
+        )
         if form.is_valid():
             form.save()
-            messages.success(request, "تم تعديل المصروف بنجاح.")
+            messages.success(request, tr(request, "expense_updated"))
             return redirect("expenses:dashboard")
     else:
-        form = ExpenseForm(instance=expense, user=request.user)
+        form = ExpenseForm(instance=expense, user=request.user, lang=request.LANG)
     return render(
-        request, "expenses/expense_form.html", {"form": form, "title": "تعديل مصروف"}
+        request,
+        "expenses/expense_form.html",
+        {"form": form, "title_key": "edit_expense_title"},
     )
 
 
-class ExpenseDeleteView(DeleteView):
+class ExpenseDeleteView(LoginRequiredMixin, DeleteView):
     model = Expense
     template_name = "expenses/expense_confirm_delete.html"
     success_url = reverse_lazy("expenses:dashboard")
@@ -238,7 +273,7 @@ class ExpenseDeleteView(DeleteView):
         return Expense.objects.filter(user=self.request.user)
 
     def form_valid(self, form):
-        messages.success(self.request, "تم حذف المصروف.")
+        messages.success(self.request, tr(self.request, "expense_deleted"))
         return super().form_valid(form)
 
 
@@ -248,15 +283,15 @@ class ExpenseDeleteView(DeleteView):
 def category_list(request):
     categories = Category.objects.filter(user=request.user)
     if request.method == "POST":
-        form = CategoryForm(request.POST)
+        form = CategoryForm(request.POST, user=request.user, lang=request.LANG)
         if form.is_valid():
             category = form.save(commit=False)
             category.user = request.user
             category.save()
-            messages.success(request, "تمت إضافة التصنيف.")
+            messages.success(request, tr(request, "category_added"))
             return redirect("expenses:categories")
     else:
-        form = CategoryForm()
+        form = CategoryForm(user=request.user, lang=request.LANG)
     return render(
         request,
         "expenses/category_list.html",
@@ -264,10 +299,17 @@ def category_list(request):
     )
 
 
-class CategoryDeleteView(DeleteView):
+class CategoryDeleteView(LoginRequiredMixin, DeleteView):
     model = Category
     template_name = "expenses/category_confirm_delete.html"
     success_url = reverse_lazy("expenses:categories")
+
+    def get_queryset(self):
+        return Category.objects.filter(user=self.request.user)
+
+    def form_valid(self, form):
+        messages.success(self.request, tr(self.request, "category_deleted"))
+        return super().form_valid(form)
 
 
 # ---------- Budgets ----------
@@ -277,29 +319,29 @@ def budgets(request):
     user = request.user
 
     if request.method == "POST":
-        amount = request.POST.get("amount")
         scope = request.POST.get("scope")  # "overall" or a category id
-        form = BudgetAmountForm({"amount": amount})
+        form = BudgetAmountForm({"amount": request.POST.get("amount")})
         if form.is_valid():
             clean_amount = form.cleaned_data["amount"]
             if scope == "overall":
                 Budget.objects.update_or_create(
                     user=user, category=None, defaults={"amount": clean_amount}
                 )
-                messages.success(request, "تم تحديث الميزانية الكلية.")
+                messages.success(request, tr(request, "budget_overall_updated"))
             else:
                 category = get_object_or_404(Category, pk=scope, user=user)
                 Budget.objects.update_or_create(
                     user=user, category=category, defaults={"amount": clean_amount}
                 )
-                messages.success(request, f"تم تحديث ميزانية {category.name}.")
+                messages.success(
+                    request, tr(request, "budget_category_updated", name=category.name)
+                )
         else:
-            messages.error(request, "قيمة الميزانية غير صحيحة.")
+            messages.error(request, tr(request, "budget_invalid"))
         return redirect("expenses:budgets")
 
     overall_budget, category_budgets = _budget_summary(user)
 
-    # Categories that don't have a budget yet, so the user can add one.
     budgeted_category_ids = [row["category"].id for row in category_budgets]
     categories_without_budget = Category.objects.filter(user=user).exclude(
         id__in=budgeted_category_ids
@@ -315,5 +357,68 @@ def budgets(request):
         },
     )
 
-    def get_queryset(self):
-        return Category.objects.filter(user=self.request.user)
+
+# ---------- Account & preferences ----------
+
+@login_required
+def account(request):
+    return render(request, "expenses/account.html")
+
+
+@require_POST
+def set_preferences(request):
+    """Change language and/or theme. Works for logged-in users (saved in
+    their profile) and for anonymous visitors (saved in cookies)."""
+    lang = request.POST.get("language")
+    theme = request.POST.get("theme")
+    lang = lang if lang in SUPPORTED_LANGUAGES else None
+    theme = theme if theme in THEMES else None
+
+    if request.user.is_authenticated:
+        profile = get_profile(request.user)
+        if lang:
+            profile.language = lang
+        if theme:
+            profile.theme = theme
+        profile.save()
+
+    next_url = request.POST.get("next", "")
+    if not url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        next_url = reverse(
+            "expenses:dashboard" if request.user.is_authenticated else "expenses:login"
+        )
+
+    if request.POST.get("notify"):
+        messages.success(
+            request, translate("prefs_saved", lang or getattr(request, "LANG", DEFAULT_LANGUAGE))
+        )
+
+    response = redirect(next_url)
+    if lang:
+        response.set_cookie("lang", lang, max_age=COOKIE_MAX_AGE, samesite="Lax")
+    if theme:
+        response.set_cookie("theme", theme, max_age=COOKIE_MAX_AGE, samesite="Lax")
+    return response
+
+
+@login_required
+@require_POST
+def account_delete(request):
+    user = request.user
+    lang = request.LANG
+
+    if not user.check_password(request.POST.get("password", "")):
+        messages.error(request, translate("wrong_password", lang))
+        return redirect("expenses:account")
+
+    # Never allow deleting the only admin account (would lock everyone out of /admin).
+    if user.is_superuser and not User.objects.filter(is_superuser=True).exclude(pk=user.pk).exists():
+        messages.error(request, translate("last_admin", lang))
+        return redirect("expenses:account")
+
+    logout(request)
+    user.delete()  # cascades: expenses, categories, budgets, profile
+    messages.success(request, translate("account_deleted", lang))
+    return redirect("expenses:login")

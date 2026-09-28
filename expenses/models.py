@@ -102,3 +102,28 @@ class Budget(models.Model):
     def __str__(self):
         label = self.category.name if self.category else "Overall"
         return f"{label} budget - {self.amount}"
+
+
+LANGUAGE_CHOICES = [
+    ("ar", "العربية"),
+    ("en", "English"),
+    ("es", "Español"),
+    ("fr", "Français"),
+]
+THEME_CHOICES = [("light", "Light"), ("dark", "Dark")]
+
+
+class Profile(models.Model):
+    """Per-user preferences (language + theme), saved so they follow the
+    user across devices."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="profile",
+    )
+    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default="ar")
+    theme = models.CharField(max_length=10, choices=THEME_CHOICES, default="light")
+
+    def __str__(self):
+        return f"Profile of {self.user}"

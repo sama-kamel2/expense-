@@ -1,13 +1,14 @@
 {% extends "expenses/base.html" %}
-{% block title %}إنشاء حساب{% endblock %}
+{% load i18n_tags %}
+{% block title %}{% t "register_title" %}{% endblock %}
 {% block content %}
 <div class="card auth-card p-4">
-    <h3 class="mb-3 text-center"><i class="fa-solid fa-user-plus"></i> إنشاء حساب جديد</h3>
+    <h3 class="mb-3 text-center"><i class="fa-solid fa-user-plus"></i> {% t "register_title" %}</h3>
     <form method="post">
         {% csrf_token %}
         {% for field in form %}
             <div class="mb-3">
-                <label class="form-label">{{ field.label }}</label>
+                <label class="form-label">{% t "field_"|add:field.name %}</label>
                 {{ field }}
                 {% if field.errors %}
                     <div class="text-danger small">{{ field.errors|striptags }}</div>
@@ -17,10 +18,10 @@
                 {% endif %}
             </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary w-100">إنشاء الحساب</button>
+        <button type="submit" class="btn btn-primary w-100">{% t "register_button" %}</button>
     </form>
     <p class="text-center mt-3 mb-0">
-        لديك حساب بالفعل؟ <a href="{% url 'expenses:login' %}">تسجيل الدخول</a>
+        {% t "have_account" %} <a href="{% url 'expenses:login' %}">{% t "login_title" %}</a>
     </p>
 </div>
 {% endblock %}

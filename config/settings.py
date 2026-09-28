@@ -7,6 +7,7 @@ Configured to run safely in development and be production-ready
 from pathlib import Path
 
 import dj_database_url
+from django.contrib.messages import constants as message_constants
 from decouple import Csv, config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -46,6 +47,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "expenses.middleware.UserPreferencesMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -62,6 +64,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "expenses.context_processors.preferences",
             ],
         },
     },
@@ -103,6 +106,15 @@ LOGOUT_REDIRECT_URL = "expenses:login"
 # Internationalization
 # ---------------------------------------------------------------------------
 LANGUAGE_CODE = "ar"
+LANGUAGES = [
+    ("ar", "العربية"),
+    ("en", "English"),
+    ("es", "Español"),
+    ("fr", "Français"),
+]
+
+# Map Django message levels to Bootstrap alert classes.
+MESSAGE_TAGS = {message_constants.ERROR: "danger"}
 TIME_ZONE = config("TIME_ZONE", default="Africa/Cairo")
 USE_I18N = True
 USE_TZ = True

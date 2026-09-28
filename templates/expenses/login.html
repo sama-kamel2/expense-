@@ -1,25 +1,26 @@
 {% extends "expenses/base.html" %}
-{% block title %}تسجيل الدخول{% endblock %}
+{% load i18n_tags %}
+{% block title %}{% t "login_title" %}{% endblock %}
 {% block content %}
 <div class="card auth-card p-4">
-    <h3 class="mb-3 text-center"><i class="fa-solid fa-wallet"></i> تسجيل الدخول</h3>
+    <h3 class="mb-3 text-center"><i class="fa-solid fa-wallet"></i> {% t "login_title" %}</h3>
     <form method="post">
         {% csrf_token %}
         {% if form.errors %}
-            <div class="alert alert-danger">اسم المستخدم أو كلمة المرور غير صحيحة.</div>
+            <div class="alert alert-danger">{% t "login_error" %}</div>
         {% endif %}
         <div class="mb-3">
-            <label class="form-label">اسم المستخدم</label>
+            <label class="form-label">{% t "username" %}</label>
             <input type="text" name="username" class="form-control" required autofocus>
         </div>
         <div class="mb-3">
-            <label class="form-label">كلمة المرور</label>
+            <label class="form-label">{% t "password" %}</label>
             <input type="password" name="password" class="form-control" required>
         </div>
-        <button type="submit" class="btn btn-primary w-100">دخول</button>
+        <button type="submit" class="btn btn-primary w-100">{% t "login_button" %}</button>
     </form>
     <p class="text-center mt-3 mb-0">
-        مستخدم جديد؟ <a href="{% url 'expenses:register' %}">إنشاء حساب</a>
+        {% t "new_user" %} <a href="{% url 'expenses:register' %}">{% t "create_account" %}</a>
     </p>
 </div>
 {% endblock %}

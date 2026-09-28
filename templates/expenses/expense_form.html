@@ -1,13 +1,14 @@
 {% extends "expenses/base.html" %}
-{% block title %}{{ title }}{% endblock %}
+{% load i18n_tags %}
+{% block title %}{% t title_key %}{% endblock %}
 {% block content %}
 <div class="card p-4" style="max-width: 560px; margin: 0 auto;">
-    <h3 class="mb-3"><i class="fa-solid fa-receipt"></i> {{ title }}</h3>
+    <h3 class="mb-3"><i class="fa-solid fa-receipt"></i> {% t title_key %}</h3>
     <form method="post">
         {% csrf_token %}
         {% for field in form %}
             <div class="mb-3">
-                <label class="form-label">{{ field.label }}</label>
+                <label class="form-label">{% t "field_"|add:field.name %}</label>
                 {{ field }}
                 {% if field.errors %}
                     <div class="text-danger small">{{ field.errors|striptags }}</div>
@@ -15,8 +16,8 @@
             </div>
         {% endfor %}
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> حفظ</button>
-            <a href="{% url 'expenses:dashboard' %}" class="btn btn-outline-secondary">إلغاء</a>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> {% t "save" %}</button>
+            <a href="{% url 'expenses:dashboard' %}" class="btn btn-outline-secondary">{% t "cancel" %}</a>
         </div>
     </form>
 </div>

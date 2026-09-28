@@ -1,0 +1,87 @@
+{% extends "expenses/base.html" %}
+{% load i18n_tags %}
+{% block title %}{% t "account_title" %}{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="fa-solid fa-user-gear"></i> {% t "account_title" %}</h2>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card p-4 mb-3">
+            <h5 class="mb-3">{% t "account_info" %}</h5>
+            <p class="mb-1"><strong>{% t "field_username" %}:</strong> {{ user.username }}</p>
+            <p class="mb-0"><strong>{% t "field_email" %}:</strong> {{ user.email|default:"—" }}</p>
+        </div>
+
+        <div class="card p-4">
+            <h5 class="mb-3">{% t "prefs_title" %}</h5>
+            <form method="post" action="{% url 'expenses:set_preferences' %}">
+                {% csrf_token %}
+                <input type="hidden" name="notify" value="1">
+                <input type="hidden" name="next" value="{% url 'expenses:account' %}">
+                <div class="mb-3">
+                    <label class="form-label">{% t "language" %}</label>
+                    <select name="language" class="form-select">
+                        {% for code, name in LANGUAGES %}
+                            <option value="{{ code }}" {% if code == LANG %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{% t "theme_label" %}</label>
+                    <select name="theme" class="form-select">
+                        <option value="light" {% if THEME == 'light' %}selected{% endif %}>{% t "theme_light_option" %}</option>
+                        <option value="dark" {% if THEME == 'dark' %}selected{% endif %}>{% t "theme_dark_option" %}</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">{% t "save" %}</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card p-4 mb-3">
+            <h5 class="mb-2">{% t "logout" %}</h5>
+            <p class="text-muted">{% t "logout_desc" %}</p>
+            <form method="post" action="{% url 'expenses:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="fa-solid fa-right-from-bracket"></i> {% t "logout" %}
+                </button>
+            </form>
+        </div>
+
+        <div class="card p-4 border border-danger">
+            <h5 class="mb-2 text-danger"><i class="fa-solid fa-triangle-exclamation"></i> {% t "danger_zone" %}</h5>
+            <p class="text-muted">{% t "delete_account_warning" %}</p>
+            <div>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                    <i class="fa-solid fa-user-slash"></i> {% t "delete_account" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{% url 'expenses:account_delete' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">{% t "delete_account" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>{% t "delete_account_warning" %}</p>
+                    <label class="form-label">{% t "confirm_with_password" %}</label>
+                    <input type="password" name="password" class="form-control" required autocomplete="current-password">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% t "cancel" %}</button>
+                    <button type="submit" class="btn btn-danger">{% t "delete_my_account" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
