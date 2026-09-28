@@ -21,6 +21,8 @@ urlpatterns = [
         views.ExpenseDeleteView.as_view(),
         name="expense_delete",
     ),
+    # Budgets
+    path("budgets/", views.budgets, name="budgets"),
     # Categories
     path("categories/", views.category_list, name="categories"),
     path(

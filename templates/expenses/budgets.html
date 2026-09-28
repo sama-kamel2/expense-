@@ -1,0 +1,107 @@
+{% extends "expenses/base.html" %}
+{% block title %}الميزانيات{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="fa-solid fa-piggy-bank"></i> الميزانيات</h2>
+
+<div class="card p-4 mb-4">
+    <h5 class="mb-3">الميزانية الكلية للشهر</h5>
+    {% if overall_budget %}
+        <div class="d-flex justify-content-between mb-1">
+            <span>الميزانية الكلية: {{ overall_budget.amount }} ج.م</span>
+            <span class="budget-remaining {% if overall_budget.over %}danger{% elif overall_budget.percent >= 80 %}warning{% else %}ok{% endif %}">
+                {% if overall_budget.over %}
+                    تجاوزت الميزانية بـ {{ overall_budget.over_amount }} ج.م
+                {% else %}
+                    متبقي {{ overall_budget.remaining }} ج.م
+                {% endif %}
+            </span>
+        </div>
+        <div class="budget-progress mb-2">
+            <div class="fill {% if overall_budget.over %}danger{% elif overall_budget.percent >= 80 %}warning{% endif %}" style="width: {{ overall_budget.percent }}%;"></div>
+        </div>
+        <ul class="small text-muted mb-3 ps-3">
+            <li>محجوز لميزانيات التصنيفات: {{ overall_budget.reserved }} ج.م</li>
+            <li>مصروف خارج ميزانيات التصنيفات: {{ overall_budget.unbudgeted_spent }} ج.م</li>
+            <li>زيادة عن ميزانيات التصنيفات: {{ overall_budget.overflow }} ج.م</li>
+        </ul>
+    {% else %}
+        <p class="text-muted">لسه محددتش ميزانية كلية للشهر.</p>
+    {% endif %}
+    <form method="post" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <input type="hidden" name="scope" value="overall">
+        <div class="col-sm-6 col-md-4">
+            <label class="form-label small">
+                {% if overall_budget %}تعديل الميزانية الكلية{% else %}حدد الميزانية الكلية{% endif %}
+            </label>
+            <input type="number" step="0.01" min="0" name="amount" class="form-control"
+                   value="{{ overall_budget.amount|default:'' }}" placeholder="مثلاً 5000" required>
+        </div>
+        <div class="col-sm-3">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+    </form>
+</div>
+
+<div class="card p-4">
+    <h5 class="mb-3">ميزانيات التصنيفات</h5>
+
+    {% if category_budgets %}
+        {% for row in category_budgets %}
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="category-badge" style="background-color: {{ row.category.color }};">{{ row.category.name }}</span>
+                    <span class="budget-remaining {% if row.over %}danger{% elif row.percent >= 80 %}warning{% else %}ok{% endif %}">
+                        {% if row.over %}
+                            تجاوزت بـ {{ row.over_amount }} ج.م
+                        {% else %}
+                            متبقي {{ row.remaining }} ج.م
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="small text-muted mb-1">{{ row.spent }} ج.م من {{ row.amount }} ج.م</div>
+                <div class="budget-progress mb-2">
+                    <div class="fill {% if row.over %}danger{% elif row.percent >= 80 %}warning{% endif %}" style="width: {{ row.percent }}%;"></div>
+                </div>
+                <form method="post" class="row g-2 align-items-end">
+                    {% csrf_token %}
+                    <input type="hidden" name="scope" value="{{ row.category.id }}">
+                    <div class="col-sm-6 col-md-4">
+                        <input type="number" step="0.01" min="0" name="amount" class="form-control form-control-sm"
+                               value="{{ row.amount }}" required>
+                    </div>
+                    <div class="col-sm-3">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">تحديث</button>
+                    </div>
+                </form>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">لسه مفيش ميزانيات لتصنيفات محددة.</p>
+    {% endif %}
+
+    {% if categories_without_budget %}
+        <hr>
+        <h6 class="mb-3">إضافة ميزانية لتصنيف</h6>
+        {% for category in categories_without_budget %}
+            <form method="post" class="row g-2 align-items-end mb-2">
+                {% csrf_token %}
+                <input type="hidden" name="scope" value="{{ category.id }}">
+                <div class="col-sm-4">
+                    <span class="category-badge" style="background-color: {{ category.color }};">{{ category.name }}</span>
+                </div>
+                <div class="col-sm-4">
+                    <input type="number" step="0.01" min="0" name="amount" class="form-control form-control-sm" placeholder="المبلغ" required>
+                </div>
+                <div class="col-sm-3">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">حفظ</button>
+                </div>
+            </form>
+        {% endfor %}
+    {% elif not category_budgets %}
+        <p class="text-muted mb-0">
+            محتاجة تضيفي تصنيفات الأول من <a href="{% url 'expenses:categories' %}">صفحة التصنيفات</a> عشان تحطيلها ميزانية.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

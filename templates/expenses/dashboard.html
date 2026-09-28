@@ -24,6 +24,39 @@
     </div>
 </div>
 
+{% if overall_budget or category_budgets %}
+<div class="card p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="fa-solid fa-piggy-bank"></i> الميزانية</h5>
+        <a href="{% url 'expenses:budgets' %}" class="btn btn-sm btn-outline-primary">إدارة الميزانيات</a>
+    </div>
+    {% if overall_budget %}
+        <div class="d-flex justify-content-between mb-1">
+            <span>الميزانية الكلية ({{ overall_budget.amount }} ج.م)</span>
+            <span class="budget-remaining {% if overall_budget.over %}danger{% elif overall_budget.percent >= 80 %}warning{% else %}ok{% endif %}">
+                {% if overall_budget.over %}تجاوزت بـ {{ overall_budget.over_amount }} ج.م{% else %}متبقي {{ overall_budget.remaining }} ج.م{% endif %}
+            </span>
+        </div>
+        <div class="budget-progress mb-3">
+            <div class="fill {% if overall_budget.over %}danger{% elif overall_budget.percent >= 80 %}warning{% endif %}" style="width: {{ overall_budget.percent }}%;"></div>
+        </div>
+    {% endif %}
+    {% for row in category_budgets %}
+        <div class="mb-2">
+            <div class="d-flex justify-content-between small mb-1">
+                <span class="category-badge" style="background-color: {{ row.category.color }};">{{ row.category.name }}</span>
+                <span class="budget-remaining {% if row.over %}danger{% elif row.percent >= 80 %}warning{% else %}ok{% endif %}">
+                    {% if row.over %}تجاوزت بـ {{ row.over_amount }} ج.م{% else %}متبقي {{ row.remaining }} ج.م{% endif %}
+                </span>
+            </div>
+            <div class="budget-progress">
+                <div class="fill {% if row.over %}danger{% elif row.percent >= 80 %}warning{% endif %}" style="width: {{ row.percent }}%;"></div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <div class="row g-3">
     <div class="col-lg-6">
         <div class="card p-3 h-100">

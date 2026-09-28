@@ -54,3 +54,27 @@ body {
 @media (max-width: 576px) {
     .stat-card .value { font-size: 1.4rem; }
 }
+
+.budget-progress {
+    height: 10px;
+    border-radius: 6px;
+    background-color: #e5e7eb;
+    overflow: hidden;
+}
+
+.budget-progress .fill {
+    height: 100%;
+    border-radius: 6px;
+    background-color: #10b981;
+    transition: width 0.3s ease;
+}
+
+.budget-progress .fill.warning { background-color: #f59e0b; }
+.budget-progress .fill.danger { background-color: #ef4444; }
+
+.budget-remaining {
+    font-weight: 700;
+}
+.budget-remaining.ok { color: #059669; }
+.budget-remaining.warning { color: #d97706; }
+.budget-remaining.danger { color: #dc2626; }

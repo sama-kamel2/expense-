@@ -65,3 +65,40 @@ class Expense(models.Model):
 
     def get_absolute_url(self):
         return reverse("expenses:detail", kwargs={"pk": self.pk})
+
+
+class Budget(models.Model):
+    """
+    A recurring monthly budget for a user.
+    category = None  -> the overall monthly budget (all expenses combined).
+    category = <cat> -> a budget scoped to just that category.
+    The same amount applies every month (no per-month rows needed); remaining
+    amounts are always computed against the current month's expenses.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="budgets",
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="budgets",
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "category"], name="unique_budget_per_user_category"
+            )
+        ]
+
+    def __str__(self):
+        label = self.category.name if self.category else "Overall"
+        return f"{label} budget - {self.amount}"

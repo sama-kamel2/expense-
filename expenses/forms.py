@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Category, Expense
+from .models import Budget, Category, Expense
 
 
 class RegisterForm(UserCreationForm):
@@ -50,6 +50,20 @@ class CategoryForm(forms.ModelForm):
                 attrs={"class": "form-control form-control-color", "type": "color"}
             ),
         }
+
+
+class BudgetAmountForm(forms.Form):
+    """A tiny reusable form: just one amount field, used for the overall
+    budget and for each per-category budget on the budgets page."""
+
+    amount = forms.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        min_value=0,
+        widget=forms.NumberInput(
+            attrs={"class": "form-control", "step": "0.01", "min": "0"}
+        ),
+    )
 
 
 class ExpenseFilterForm(forms.Form):
